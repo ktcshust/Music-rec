@@ -1,7 +1,6 @@
 import sys
 import PyQt5
 from PyQt5.QtWidgets import *
-from sklearn.linear_model import LinearRegression
 import pandas as pd
 import numpy as np
 import pyodbc
@@ -11,6 +10,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from spotipy.oauth2 import SpotifyClientCredentials
 from PyQt5.QtGui import QIntValidator
+import tensorflow as tf
+from tensorflow import keras
 
 spotify = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="7e5c4955d03c412482338a09edc225b6",
                                                                 client_secret="4ebbedb4f6554c6a9c1252e053866a82"))
@@ -219,39 +220,49 @@ class Recommender:
     def recommend_songs(self):
         user_ratings = self.rating_df.loc[self.rating_df['username'] == self.username]
         print(user_ratings)
-        self.song_df['title'] = 'https://open.spotify.com/track/' + self.song_df['id']
+        self.song_df['link'] = 'https://open.spotify.com/track/' + self.song_df['id']
         print(self.song_df)
         merged_df = pd.merge(self.song_df, user_ratings, on = 'uri', how='left')
         print(merged_df)
         merged_df.to_csv('demo.csv')
         rated_songs = merged_df[~merged_df['rating'].isna()]
         print(rated_songs)
+        rated_songs['weight'] = rated_songs['rating'].astype(int)/100
+        print(rated_songs)
         unrated_songs = merged_df[merged_df['rating'].isna()]
+        unrated_songs = unrated_songs.reset_index()
         print(unrated_songs)
 
         # Split the rated songs dataframe into features and labels
         X = rated_songs[['danceability', 'energy', 'valence', 'instrumentalness', 'acousticness', 'speechiness']]
-        y = rated_songs['rating']
+        y = rated_songs['weight']
+
         print(X)
         print(y)
+        model = keras.Sequential([
+            keras.layers.Dense(16, activation='relu', input_shape=(6,)),
+            keras.layers.Dense(1, activation='sigmoid')
+        ])
 
-        # Train a linear regression model on the rated songs
-        model = LinearRegression()
-        model.fit(X, y)
-        print('m')
+        # Compile the model with binary crossentropy loss and Adam optimizer
+        model.compile(loss='binary_crossentropy', optimizer='adam')
+
+        # Train the model on the rated songs
+        model.fit(X, y, epochs=100)
 
         # Predict the ratings for the unrated songs
         X_unrated = unrated_songs[['danceability', 'energy', 'valence', 'instrumentalness', 'acousticness', 'speechiness']]
-        print(X_unrated)
-        predicted_ratings = model.predict(X_unrated)
-        print('m')
+        predicted_ratings_0 = model.predict(X_unrated)
+        print(predicted_ratings_0)
+        predicted_ratings = 100 * predicted_ratings_0
+        print(predicted_ratings)
 
-
-        # Fill in the predicted ratings in the unrated songs dataframe
-        unrated_songs['rating'] = pd.Series(predicted_ratings, index=unrated_songs.index)
-
+        df = pd.DataFrame(predicted_ratings, columns=['Rating'])
+        print(df)
+        unrated_songs = pd.concat([unrated_songs, df], axis=1)
+        unrated_songs = unrated_songs[['link', 'name', 'Rating']]
         # Print the predicted ratings for the unrated songs
-        print(unrated_songs[['link', 'rating']])
+        return unrated_songs
     def logout(self):
         if self.username:
             print(f"Logged out of account {self.username}.")
@@ -331,7 +342,7 @@ class MainScreen(QWidget):
 
     def switchToLoginScreen(self):
         # Switch to the LoginScreen
-        self.loginScreen = LoginSignUpScreen()
+        self.loginScreen = LoginSignUpScreen(Recommender)
         self.loginScreen.show()
         self.hide()
 
@@ -422,13 +433,8 @@ class LoginSignUpScreen(QMainWindow):
             self.textField1_1.clear()
             self.textField1_2.clear()
         else:
-            self.recommender.log_in(username, password)
             print('Login')
-            if any((self.recommender.user_df['username'] == str(username)) & (
-                    self.recommender.user_df['password'] == str(password))):
-                self.recommender.username = username
-                self.go_to_music_screen()
-            else:
+            if len(self.recommender.user_df) == 0:
                 msg_box = QMessageBox()
                 msg_box.setIcon(QMessageBox.Critical)
                 msg_box.setText('Wrong username or password')
@@ -436,6 +442,19 @@ class LoginSignUpScreen(QMainWindow):
                 msg_box.exec_()
                 # clear the password field
                 self.textField1_2.clear()
+            else:
+                if any((self.recommender.user_df['username'] == str(username)) & (
+                        self.recommender.user_df['password'] == str(password))):
+                    self.recommender.username = username
+                    self.go_to_music_screen()
+                else:
+                    msg_box = QMessageBox()
+                    msg_box.setIcon(QMessageBox.Critical)
+                    msg_box.setText('Wrong username or password')
+                    msg_box.setWindowTitle('Error')
+                    msg_box.exec_()
+                    # clear the password field
+                    self.textField1_2.clear()
 
     def signup(self):
         # get the entered username and password
@@ -716,14 +735,13 @@ class MusicScreen(QMainWindow):
 
     def get_recommend(self):
         self.recommender.recommend_songs()
-        # get the data
-        # data = self.recommender.recommend_songs
+        data = self.recommender.recommend_songs
 
         # create a table model to display the song data in the table view
-        # table_model = PandasModel(data)
+        table_model = PandasModel(data)
 
         # set the table model on the table view
-        # self.tableview4.setModel(table_model)
+        self.tableview4.setModel(table_model)
 
     def logout(self):
         self.music_screen = LoginSignUpScreen(Recommender)
