@@ -261,6 +261,7 @@ class Recommender:
         print(df)
         unrated_songs = pd.concat([unrated_songs, df], axis=1)
         unrated_songs = unrated_songs[['link', 'name', 'Rating']]
+        print(unrated_songs)
         # Print the predicted ratings for the unrated songs
         return unrated_songs
     def logout(self):
@@ -735,8 +736,9 @@ class MusicScreen(QMainWindow):
 
     def get_recommend(self):
         self.recommender.recommend_songs()
-        data = self.recommender.recommend_songs
-
+        print('t')
+        data = self.recommender.recommend_songs()
+        print('f')
         # create a table model to display the song data in the table view
         table_model = PandasModel(data)
 
