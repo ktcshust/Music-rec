@@ -10,8 +10,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from spotipy.oauth2 import SpotifyClientCredentials
 from PyQt5.QtGui import QIntValidator
-import tensorflow as tf
-from tensorflow import keras
+from sklearn.linear_model import Ridge
+from sklearn.metrics import mean_squared_error
 
 spotify = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="7e5c4955d03c412482338a09edc225b6",
                                                                 client_secret="4ebbedb4f6554c6a9c1252e053866a82"))
@@ -239,16 +239,10 @@ class Recommender:
 
         print(X)
         print(y)
-        model = keras.Sequential([
-            keras.layers.Dense(16, activation='relu', input_shape=(6,)),
-            keras.layers.Dense(1, activation='sigmoid')
-        ])
-
-        # Compile the model with binary crossentropy loss and Adam optimizer
-        model.compile(loss='binary_crossentropy', optimizer='adam')
+        ridge = Ridge(alpha=0.1)
 
         # Train the model on the rated songs
-        model.fit(X, y, epochs=100)
+        model = ridge.fit(X, y)
 
         # Predict the ratings for the unrated songs
         X_unrated = unrated_songs[['danceability', 'energy', 'valence', 'instrumentalness', 'acousticness', 'speechiness']]
