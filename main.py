@@ -155,9 +155,6 @@ class Recommender:
                 print(f"Account for {username} created successfully. Please log in to continue.")
             print(self.user_df)
 
-    # Log in a user, go to main menu screen and return their ratings in screen backup the rating
-    # Log in screen, have 2 textbox: username and password
-
     def log_in(self, username, password):
         if any((self.user_df['username'] == username) & (self.user_df['password'] == password)):
             self.username = username
@@ -371,12 +368,17 @@ class LoginSignUpScreen(QMainWindow):
         self.textField1_1 = QLineEdit()
         label1_2 = QLabel('Password')
         self.textField1_2 = QLineEdit()
+        self.textField1_2.setEchoMode(QLineEdit.Password)
+        # create checkbox to display original text
+        show_password = QCheckBox('Show Password')
+        show_password.stateChanged.connect(self.toggle_password_echo)
         loginbutton = QPushButton('Login')
         loginbutton.clicked.connect(self.login)
         tab1.layout = QVBoxLayout(tab1)
         tab1.layout.addWidget(label1_1)
         tab1.layout.addWidget(self.textField1_1)
         tab1.layout.addWidget(label1_2)
+        tab1.layout.addWidget(show_password)
         tab1.layout.addWidget(self.textField1_2)
         tab1.layout.addWidget(loginbutton)
         tab1.setLayout(tab1.layout)
@@ -385,8 +387,14 @@ class LoginSignUpScreen(QMainWindow):
         self.textField2_1 = QLineEdit()
         label2_2 = QLabel('Password')
         self.textField2_2 = QLineEdit()
+        self.textField2_2.setEchoMode(QLineEdit.Password)
         label2_3 = QLabel('Repeat password')
         self.textField2_3 = QLineEdit()
+        self.textField2_3.setEchoMode(QLineEdit.Password)
+        show_password1 = QCheckBox('Show Password')
+        show_password1.stateChanged.connect(self.toggle_password_echo)
+        show_password2 = QCheckBox('Show Password')
+        show_password2.stateChanged.connect(self.toggle_password_echo)
         signupbutton = QPushButton('Sign up')
         signupbutton.clicked.connect(self.signup)
         tab2.layout = QVBoxLayout(tab2)
@@ -485,7 +493,7 @@ class LoginSignUpScreen(QMainWindow):
                 if len(self.recommender.user_df) == 0:
                     # show an error message
                     msg_box = QMessageBox()
-                    msg_box.setIcon(QMessageBox.Critical)
+                    msg_box.setIcon(QMessageBox.Information)
                     msg_box.setText('Sign up successful')
                     msg_box.setWindowTitle('Success')
                     msg_box.exec_()
@@ -494,7 +502,7 @@ class LoginSignUpScreen(QMainWindow):
                     if not any(self.recommender.user_df['username'] == username):
                         # show an error message
                         msg_box = QMessageBox()
-                        msg_box.setIcon(QMessageBox.Critical)
+                        msg_box.setIcon(QMessageBox.Information)
                         msg_box.setText('Sign up successful')
                         msg_box.setWindowTitle('Success')
                         msg_box.exec_()
@@ -504,7 +512,7 @@ class LoginSignUpScreen(QMainWindow):
 
                     else:
                         msg_box = QMessageBox()
-                        msg_box.setIcon(QMessageBox.Information)
+                        msg_box.setIcon(QMessageBox.Critical)
                         msg_box.setText('Username already exists')
                         msg_box.setWindowTitle('Error')
                         msg_box.exec_()
@@ -519,6 +527,11 @@ class LoginSignUpScreen(QMainWindow):
         self.music_screen.show()
         self.hide()
 
+    def toggle_password_echo(self, state):
+        if state == 2:  # if checkbox is checked
+            self.textField1_2.setEchoMode(QLineEdit.Normal)
+        else:
+            self.textField1_2.setEchoMode(QLineEdit.Password)
 
 class MusicScreen(QMainWindow):
     def __init__(self, Recommender):
