@@ -392,17 +392,19 @@ class LoginSignUpScreen(QMainWindow):
         self.textField2_3 = QLineEdit()
         self.textField2_3.setEchoMode(QLineEdit.Password)
         show_password1 = QCheckBox('Show Password')
-        show_password1.stateChanged.connect(self.toggle_password_echo)
+        show_password1.stateChanged.connect(self.toggle_password_echo1)
         show_password2 = QCheckBox('Show Password')
-        show_password2.stateChanged.connect(self.toggle_password_echo)
+        show_password2.stateChanged.connect(self.toggle_password_echo2)
         signupbutton = QPushButton('Sign up')
         signupbutton.clicked.connect(self.signup)
         tab2.layout = QVBoxLayout(tab2)
         tab2.layout.addWidget(label2_1)
         tab2.layout.addWidget(self.textField2_1)
         tab2.layout.addWidget(label2_2)
+        tab2.layout.addWidget(show_password1)
         tab2.layout.addWidget(self.textField2_2)
         tab2.layout.addWidget(label2_3)
+        tab2.layout.addWidget(show_password2)
         tab2.layout.addWidget(self.textField2_3)
         tab2.layout.addWidget(signupbutton)
         tab2.setLayout(tab2.layout)
@@ -532,6 +534,18 @@ class LoginSignUpScreen(QMainWindow):
             self.textField1_2.setEchoMode(QLineEdit.Normal)
         else:
             self.textField1_2.setEchoMode(QLineEdit.Password)
+
+    def toggle_password_echo1(self, state):
+        if state == 2:  # if checkbox is checked
+            self.textField2_2.setEchoMode(QLineEdit.Normal)
+        else:
+            self.textField2_2.setEchoMode(QLineEdit.Password)
+
+    def toggle_password_echo2(self, state):
+        if state == 2:  # if checkbox is checked
+            self.textField2_3.setEchoMode(QLineEdit.Normal)
+        else:
+            self.textField2_3.setEchoMode(QLineEdit.Password)
 
 class MusicScreen(QMainWindow):
     def __init__(self, Recommender):
