@@ -676,6 +676,7 @@ class MusicScreen(QMainWindow):
     def rating(self):
         title = self.textfield2_1.text()
         rating = self.textfield2_2.text()
+        song_uri = title.split("/")[-1].split("?")[0]
         if 'open.spotify.com' not in title:
             msg_box = QMessageBox()
             msg_box.setIcon(QMessageBox.Critical)
@@ -694,7 +695,29 @@ class MusicScreen(QMainWindow):
                 # clear the song link text field
                 self.textfield2_2.clear()
             else:
-                self.recommender.add_rating(title, rating)
+                print(song_uri)
+                if len(self.recommender.song_df) == 0 or song_uri not in self.recommender.song_df['id'].values:
+                    print('m')
+                    messageBox = QMessageBox()
+                    messageBox.setWindowTitle('Confirm')
+                    messageBox.setText('Song not found, do you want to add this song to database?')
+
+                    # Add buttons to the message box
+                    yesButton = messageBox.addButton('Yes', QMessageBox.AcceptRole)
+                    noButton = messageBox.addButton('No', QMessageBox.RejectRole)
+                    # Show the message box and wait for a response
+                    messageBox.exec()
+
+                    # Process the user's response
+                    if messageBox.clickedButton() == yesButton:
+                        self.recommender.add(title)
+                    elif messageBox.clickedButton() == noButton:
+                        messageBox.exec()
+                    else:
+                        messageBox.exec()
+                    self.recommender.add_rating(title, rating)
+                else:
+                    self.recommender.add_rating(title, rating)
 
     def get_similar_recommendations(self):
         # get the song link from the textfield
@@ -711,20 +734,31 @@ class MusicScreen(QMainWindow):
             # clear the song link text field
             self.song_link.clear()
         else:
-            if any(self.recommender.song_df['uri'] == uri):
+            if len(self.recommender.song_df) == 0 or uri not in self.recommender.song_df['uri'].values:
+                print('m')
+                messageBox = QMessageBox()
+                messageBox.setWindowTitle('Confirm')
+                messageBox.setText('Song not found, do you want to add this song to database?')
 
+                # Add buttons to the message box
+                yesButton = messageBox.addButton('Yes', QMessageBox.AcceptRole)
+                noButton = messageBox.addButton('No', QMessageBox.RejectRole)
+                # Show the message box and wait for a response
+                messageBox.exec()
+                # Process the user's response
+                if messageBox.clickedButton() == yesButton:
+                    self.recommender.add(song_link)
+                elif messageBox.clickedButton() == noButton:
+                    messageBox.exec()
+                else:
+                    messageBox.exec()
+            else:
                 self.recommender.get_similar_recommendations(song_link)
                 data = self.recommender.get_similar_recommendations(song_link)
 
                 # create a table model to display the song data in the table view
                 table_model = PandasModel(data)
                 self.tableview3.setModel(table_model)
-            else:
-                msg_box = QMessageBox()
-                msg_box.setIcon(QMessageBox.Critical)
-                msg_box.setText('Song not found')
-                msg_box.setWindowTitle('Error')
-                msg_box.exec_()
 
         # create a pandas DataFrame for the similar songs
 
