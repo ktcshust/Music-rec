@@ -12,7 +12,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from PyQt5.QtGui import QIntValidator
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error
-
+import requests
 spotify = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="7e5c4955d03c412482338a09edc225b6",
                                                                 client_secret="4ebbedb4f6554c6a9c1252e053866a82"))
 
@@ -124,11 +124,13 @@ class Recommender:
         track_audio_features = spotify.audio_features(tracks=df4['uri'].values.tolist())
         print('A')
         audio_features_df = pd.DataFrame.from_dict(track_audio_features)
-        drop_cols = ['type', 'id', 'uri', 'track_href', 'analysis_url']
+        drop_cols = ['type', 'id', 'uri', 'track_href', 'analysis_url', 'key', 'duration_ms']
         audio_features_df.drop(columns=drop_cols, inplace=True)
         artist_df = pd.concat([df4, audio_features_df], axis=1)
         artist_df1 = artist_df.replace(np.nan, 0)
         print('B')
+        print(self.song_df.columns)
+        print(artist_df1.columns)
         if len(self.song_df) == 0:
             self.song_df = artist_df1
         else:
@@ -629,7 +631,15 @@ class MusicScreen(QMainWindow):
     def add(self):
         # Get the text from the text field
         song = self.textfield1_1.text()
-        if 'open.spotify.com' not in song:
+        if 'open.spotify.com/track' not in song:
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setText('Invalid song link, please try again')
+            msg_box.setWindowTitle('Error')
+            msg_box.exec_()
+            # clear the song link text field
+            self.textfield1_1.clear()
+        elif requests.head(song).status_code != 200:
             msg_box = QMessageBox()
             msg_box.setIcon(QMessageBox.Critical)
             msg_box.setText('Invalid song link, please try again')
@@ -643,7 +653,7 @@ class MusicScreen(QMainWindow):
     def crawl(self):
         # Get the text from the text field
         artist = self.textfield1_2.text()
-        if 'open.spotify.com' not in artist:
+        if 'open.spotify.com/artist' not in artist:
             msg_box = QMessageBox()
             msg_box.setIcon(QMessageBox.Critical)
             msg_box.setText('Invalid song link, please try again')
@@ -651,6 +661,14 @@ class MusicScreen(QMainWindow):
             msg_box.exec_()
             # clear the song link text field
             self.textfield1_2.clear()
+        elif requests.head(artist).status_code != 200:
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setText('Invalid song link, please try again')
+            msg_box.setWindowTitle('Error')
+            msg_box.exec_()
+            # clear the song link text field
+            self.textfield1_1.clear()
         else:
             self.recommender.crawler(artist)
 
@@ -677,10 +695,18 @@ class MusicScreen(QMainWindow):
         title = self.textfield2_1.text()
         rating = self.textfield2_2.text()
         song_uri = title.split("/")[-1].split("?")[0]
-        if 'open.spotify.com' not in title:
+        if 'open.spotify.com/track' not in title:
             msg_box = QMessageBox()
             msg_box.setIcon(QMessageBox.Critical)
             msg_box.setText('Invalid song link')
+            msg_box.setWindowTitle('Error')
+            msg_box.exec_()
+            # clear the song link text field
+            self.textfield2_1.clear()
+        elif requests.head(title).status_code != 200:
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setText('Invalid song link, please try again')
             msg_box.setWindowTitle('Error')
             msg_box.exec_()
             # clear the song link text field
@@ -725,14 +751,22 @@ class MusicScreen(QMainWindow):
         song_uri = song_link.split("/")[-1].split("?")[0]
         uri = "spotify:track:" + song_uri
         # check if the link is valid
-        if 'open.spotify.com' not in song_link:
+        if 'open.spotify.com/track' not in song_link:
             msg_box = QMessageBox()
             msg_box.setIcon(QMessageBox.Critical)
             msg_box.setText('Invalid song link')
             msg_box.setWindowTitle('Error')
             msg_box.exec_()
             # clear the song link text field
-            self.song_link.clear()
+            self.textfield3.clear()
+        elif requests.head(song_link).status_code != 200:
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setText('Invalid song link, please try again')
+            msg_box.setWindowTitle('Error')
+            msg_box.exec_()
+            # clear the song link text field
+            self.textfield3.clear()
         else:
             if len(self.recommender.song_df) == 0 or uri not in self.recommender.song_df['uri'].values:
                 print('m')
